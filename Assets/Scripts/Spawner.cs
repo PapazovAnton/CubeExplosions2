@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Explosion))]
@@ -9,24 +10,27 @@ public class Spawner : MonoBehaviour
     [SerializeField] private int _maxCubes = 7;
 
     private Explosion _explosion;
+    private List<Cube> _cubes = new List<Cube>();
 
     private void OnEnable()
     {
-        Cube.Click += TrySpawnCubes;
+        foreach (var cube in _cubes)
+        {
+            cube.Click += TrySpawnCubes;
+        }
     }
 
     private void OnDisable()
     {
-        Cube.Click -= TrySpawnCubes;
-    }
-
-    private void Awake()
-    {
-        _explosion = GetComponent<Explosion>();
+        foreach (var cube in _cubes)
+        {
+            cube.Click -= TrySpawnCubes;
+        }
     }
 
     private void Start()
     {
+        _explosion = GetComponent<Explosion>();
         SpawnInitialCube();
     }
 
@@ -35,9 +39,9 @@ public class Spawner : MonoBehaviour
         Vector3 scale = new Vector3(3, 3, 3);
         Vector3[] cubePositions = new Vector3[]
         {
-            new Vector3(0f, 3f, -53f),
-            new Vector3(-6f, 3f, -53f),
-            new Vector3(6f, 3f, -53f)
+            new Vector3(0f, 3f, -40f),
+            new Vector3(-6f, 3f, -40f),
+            new Vector3(6f, 3f, -40f)
         };
 
         float splitChance = 1f;
@@ -46,6 +50,8 @@ public class Spawner : MonoBehaviour
         {
             Cube newCube = Instantiate(cubePrefab, position, Quaternion.identity);
             newCube.Init(position, scale, splitChance);
+            newCube.Click += TrySpawnCubes;
+            _cubes.Add(newCube);
         }
     }
 
@@ -59,6 +65,9 @@ public class Spawner : MonoBehaviour
         {
             GenerateExplosion(cube);
         }
+
+        cube.Click -= TrySpawnCubes;
+        _cubes.Remove(cube);
     }
 
     private void SpawnCubes(Cube cube)
@@ -79,9 +88,12 @@ public class Spawner : MonoBehaviour
             Cube newCube = Instantiate(cubePrefab, position, Quaternion.identity);
             newCube.Init(position, scale, newSplitChance);
 
-            if (newCube.TryGetComponent(out Rigidbody rb) && _explosion != null)
+            newCube.Click += TrySpawnCubes;
+            _cubes.Add(newCube);
+
+            if (newCube.TryGetComponent(out Rigidbody rigidbody) && _explosion != null)
             {
-                _explosion.ApplyExplosionForce(rb, position, explosionRadius, explosionForce);
+                _explosion.ApplyExplosionForce(rigidbody, position, explosionRadius, explosionForce);
             }
         }
     }
@@ -97,13 +109,13 @@ public class Spawner : MonoBehaviour
 
         foreach (Collider hit in colliders)
         {
-            Rigidbody rb = hit.GetComponent<Rigidbody>();
+            Rigidbody rigidbody = hit.GetComponent<Rigidbody>();
 
-            if (rb != null)
+            if (rigidbody != null)
             {
-                float proximity = (explosionPosition - rb.transform.position).magnitude;
+                float proximity = (explosionPosition - rigidbody.transform.position).magnitude;
                 float effect = maxEffect - (proximity / explosionRadius);
-                _explosion.ApplyExplosionForce(rb, explosionPosition, explosionRadius, explosionPower * effect);
+                _explosion.ApplyExplosionForce(rigidbody, explosionPosition, explosionRadius, explosionPower * effect);
             }
         }
     }

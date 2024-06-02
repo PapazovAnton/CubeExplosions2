@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(Rigidbody), typeof(Renderer))]
 
 public class Cube : MonoBehaviour
 {
@@ -9,7 +9,7 @@ public class Cube : MonoBehaviour
     public float ExplosionRadius { get; private set; }
     public float ExplosionPower { get; private set; }
 
-    public static event Action<Cube> Click;
+    public event Action<Cube> Click;
 
     private void OnMouseDown()
     {
